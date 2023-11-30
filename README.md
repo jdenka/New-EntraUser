@@ -3,7 +3,7 @@ This function is primarly created to be run interactivly, it requires you to con
 Connect-MgGraph -Scopes "User.ReadWrite.All"
 It also requires the module BinaryPasswordGenerator (https://www.powershellgallery.com/packages/BinaryPasswordGenerator/1.0.3)
 
-If you are going to use this please edit the Parameter validate set with your own custom domains if needed. Those in the script will obviously not work.
+If you are going to use this you will need to edit the Parameter validateset with your own custom domains. Without changeing it you wont be able to use the script, the minimal you have to do is to add your primary domain.
 
 ## Exapmles 
 ```
