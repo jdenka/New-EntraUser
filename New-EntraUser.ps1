@@ -3,6 +3,8 @@
 This function is primarly created to be run interactivly, it requires you to connect to Microsoft Graph using 
 Connect-MgGraph -Scopes "User.ReadWrite.All"
 It also requires the module BinaryPasswordGenerator (https://www.powershellgallery.com/packages/BinaryPasswordGenerator/1.0.3)
+
+You need to edit the ValidateSet with minimum your primary domain for this to work properly. 
 #>
 function New-EntraUser {
     param (
