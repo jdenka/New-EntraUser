@@ -6,11 +6,11 @@ It also requires the module BinaryPasswordGenerator (https://www.powershellgalle
 #>
 function New-EntraUser {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$GivenName,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$SurName,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("cloudidentity.se", "replacethiswithyourdomains.abc", "yourcompanydomain.xyz", "thiswasjustfortesting.net")]
         $Domain
 
@@ -25,7 +25,7 @@ function New-EntraUser {
         param ([String]$srcString = [String]::Empty)
         $normalized = $srcString.Normalize( [Text.NormalizationForm]::FormD )
         $sb = new-object Text.StringBuilder
-        $normalized.ToCharArray() | % { 
+        $normalized.ToCharArray() | Foreach-Object { 
             if ( [Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne [Globalization.UnicodeCategory]::NonSpacingMark) {
                 [void]$sb.Append($_)
             }
@@ -33,7 +33,7 @@ function New-EntraUser {
         $sb.ToString()
     }
     # If $Domain is null or empty it will check the environments default domain and use it.
-    if([string]::IsNullOrEmpty($Domain)) {
+    if ([string]::IsNullOrEmpty($Domain)) {
         $pd = Get-MgDomain | Where-Object { $_.IsDefault -eq 'True' } | Select-Object id
         $domain = $pd.Id
     }
@@ -49,19 +49,45 @@ function New-EntraUser {
     $userParams = @{
         GivenName         = "$($GivenName)"
         Surname           = "$($SurName)"
-        UserPrincipalName = "$($MailName)@$($Domain)"
         DisplayName       = "$($GivenName) $($SurName)"
         PasswordProfile   = $PasswordProfile
         AccountEnabled    = $true
         MailNickname      = $MailName
+        UserPrincipalName = "$($MailName)@$($Domain)"
     }
-    
-    # Create a new user
-    try {
-        New-MgUser @userParams
-        Write-Output "--------- `nCreated user with username: `n$($userParams.UserPrincipalName) `nWith password: `n$Password `n---------"
+    $counter = 0
+    $checkupn = get-mguser -search "userprincipalname:$($userparams.UserPrincipalName)" -ConsistencyLevel eventual
+    if ($null -eq $checkupn) {
+        # Create a new user
+        try {
+            New-MgUser @userParams -ErrorAction Stop
+            Write-Output "--------- `nCreated user with username: `n$($userParams.UserPrincipalName) `nWith password: `n$Password `n---------"
+        }
+        catch {
+            Write-Error "Failed to create user" 
+        }
     }
-    catch {
-        Write-Error "Failed to create user" 
+    else {
+        try {
+            while ($null -ne $checkupn) {
+                $counter++
+                $countername = $MailName+$counter
+                $userParams = @{
+                    GivenName         = "$($GivenName)"
+                    Surname           = "$($SurName)"
+                    DisplayName       = "$($GivenName) $($SurName)"
+                    PasswordProfile   = $PasswordProfile
+                    AccountEnabled    = $true
+                    MailNickname      = $countername
+                    UserPrincipalName = "$($countername)@$($Domain)"
+                }
+                $checkupn = get-mguser -search "userprincipalname:$($userparams.UserPrincipalName)" -ConsistencyLevel eventual
+            }
+            New-MgUser @userParams -ErrorAction Stop
+            Write-Output "--------- `nCreated user with username: `n$($userParams.UserPrincipalName) `nWith password: `n$Password `n---------"
+        }
+        catch {
+            Write-Error "Failed to create user"
+        }
     }
 }
