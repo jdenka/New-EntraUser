@@ -75,15 +75,8 @@ function New-EntraUser {
             while ($null -ne $checkupn) {
                 $counter++
                 $countername = $MailName+$counter
-                $userParams = @{
-                    GivenName         = "$($GivenName)"
-                    Surname           = "$($SurName)"
-                    DisplayName       = "$($GivenName) $($SurName)"
-                    PasswordProfile   = $PasswordProfile
-                    AccountEnabled    = $true
-                    MailNickname      = $countername
-                    UserPrincipalName = "$($countername)@$($userdomain)"
-                }
+                $userParams["MailNickname"] = $countername
+                $userParams["UserPrincipalName"] = "$($countername)@$($userdomain)"
                 $checkupn = get-mguser -search "userprincipalname:$($userparams.UserPrincipalName)" -ConsistencyLevel eventual
             }
             New-MgUser @userParams -ErrorAction Stop
